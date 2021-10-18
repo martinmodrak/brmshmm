@@ -1,0 +1,65 @@
+---
+title: "HMMs"
+subtitle: "--"
+author: "Martin Modrák"
+institute: "Institute of Microbiology of the Czech Academy of Sciences"
+date: "2021/10/19 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+- Motivation
+  - Datasets: Covid, Alzheimer
+  - Disease progression models
+    - Start => Event
+    - Competing risks
+    - Cancer progression (alive -> progression -> Death; alive -> death)
+    - Bidirectional (simple Covid)
+  - Multiple ways to model:
+    - CoxPH
+    - Accelerated failure time (just mention)
+    - And HMMs!
+  - CoxPH
+    - Not an expert on Cox
+    - Underlying baseline hazard - same for all patients (or groups of patients)
+    - Modelling choices: when is time 0? Does time reset after transition?
+    - This is a great model! 
+    - Can be implemented in a fully Bayesian setting (brms has implementation)
+      - Making the baseline hazard explicit (e.g. spline)
+  - What Cox cannot do
+    - (at least not easily - not an expert, happy to be corrected)
+    - extrapolation beyond range of data
+      - That's not super important (extrapolation is hard anyway)
+    - Impose structure on states
+      - E.g. AA -> Ventilated < Oxygen -> Ventilated
+      - Limits the number of transitions one can use
+    - Partially observed states (Alzheimer progression)
+- HMMs 
+  - What are HMMs
+    - Hidden states, likelihood, transition matrix
+    - Likelihood can be anything!
+    - Can have missing observations!
+  - Just mention forward algorithm
+  - Varying transition matrices - separate matrices, matrices as categorical regression
+    - Cannot have missing data on predictors :-(
+  - Matrices as ordinal regression (never done myself)
+  - Enforce more structure: rate matrix
+    - Why do we observe AA => Ventilated?
+      - In fact two transitions
+      - Continuous time 
+    - Reformulate as ODE
+      - Note: to make this tractable we still need discrete time for predictors
+    - Matrix exponentiation slow
+  - Limitations
+    - Geometric distribution of sojourn times
+      - More states!
+- HMM vs Cox summary
+- Some results
+  - CovidRetro
+  - Alzheimer
+  
