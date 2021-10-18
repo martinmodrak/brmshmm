@@ -1,8 +1,7 @@
 ---
-title: "HMMs"
-subtitle: "--"
-author: "Martin Modrák"
-institute: "Institute of Microbiology of the Czech Academy of Sciences"
+title: "Hidden Markov Models"
+subtitle: "as an alternative to Cox proportional hazards models of disease progression"
+author: "Martin Modrák - Institute of Microbiology of the Czech Academy of Sciences"
 date: "2021/10/19 (updated: `r Sys.Date()`)"
 output:
   xaringan::moon_reader:
@@ -16,33 +15,6 @@ output:
 
 
 
-# Motivating datasets 2
-
-Mayo Clinic Study of Aging (MCSA) - dementia progression. 
---
-As analyzed by Williams et al. 2018, https://doi.org/10.1080/01621459.2019.1594831
---
-
-- Indirect measure of buildup of amyloid (Pittsburgh Compound B)
-
---
-
-- Indirect measure of neurodegeneration (Cortical thickness)
-
---
-
-- Questionnaire on cognitive impairment
-
---
-
-- Binary classification of dementia state
-
---
-
-- Irregular visits
-
----
-
 # Disease progression models
 
 --
@@ -52,12 +24,6 @@ As analyzed by Williams et al. 2018, https://doi.org/10.1080/01621459.2019.15948
 --
 
 ![](overview_figs/competing_risks.png)
-
----
-
-# Disease progression models II
-
-![](overview_figs/progression.png)
 
 ---
 
@@ -72,7 +38,12 @@ Covid-19 Diseaese progression + treatments, Modrák et al. 2021, https://doi.org
 
 # Disease progression models IV
 
+Mayo Clinic Study of Aging (MCSA) - dementia progression. 
+As analyzed by Williams et al. 2018, https://doi.org/10.1080/01621459.2019.1594831
+
+
 ![](overview_figs/dementia_no_death.png)
+
 
 ---
 
@@ -100,46 +71,6 @@ Covid-19 Diseaese progression + treatments, Modrák et al. 2021, https://doi.org
 ???
 
 Will just briefly mention accelerated failure time
-
----
-
-# Cox PH
-
---
-
-- Not an expert on Cox
-
---
-
-- Underlying baseline hazard - same for all patients 
-
---
-(or groups of patients)
-
---
-
-- Modelling choices: 
-
---
-
-  - When is time 0?
-  
---
-
-  - Does time reset after transition?
-
---
-
-- This is a great model! 
-
---
-
-- Can be implemented in a fully Bayesian setting (`brms` has implementation)
-
---
-
-  - Making the baseline hazard explicit (e.g. spline)
-
 
 ---
 
@@ -213,10 +144,7 @@ I.e. we need:
 
 --
 
-- **Forward algorithm**: Exact likelihood $P(Y_t, ... Y_1 | \theta)$ can be computed in
-$\Theta(tK^2)$
-
-  - $K$ - the number of hidden states.
+- **Forward algorithm**: Exact likelihood $P(Y_t, ... Y_1 | \theta)$ can be computed efficiently
   
 --
 
@@ -225,6 +153,10 @@ $\Theta(tK^2)$
 --
 
   - Missing observations? No problem!
+
+--
+
+- Cannot have missing predictors
 
 ---
 
@@ -313,10 +245,6 @@ We now have $A = \exp(R)$ so that $p(t + 1) = Ap(t)$
 --
 
 - Still discrete time for predictors
-
---
-
-- Cannot have missing predictors
 
 --
 
