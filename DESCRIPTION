@@ -17,6 +17,9 @@ RoxygenNote: 7.1.1
 LinkingTo: 
     Rcpp
 Imports: 
+    brms,
+    dplyr,
+    loo,
     Rcpp
 Suggests: 
     testthat (>= 3.0.0)

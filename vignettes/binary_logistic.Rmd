@@ -1,0 +1,78 @@
+---
+title: "Vignette Title"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r}
+#### Setup ####
+library(ggplot2)
+
+P = 80 # persons
+J = 60 # trials
+
+#### Monotonic decreasing sim ####
+intercept = runif(P, 0.7, 0.95)
+slope = runif(P, -0.0075, -0.0025)
+
+prob_true = matrix(NA, nrow=J, ncol=P)
+for(j in 1:P){
+  prob_true[,j] = intercept[j] + slope[j] * 1:J
+}
+
+ID = rep(1:P, each=J)
+
+y= matrix(NA, nrow=J, ncol=P)
+for(j in 1:P){
+  y[,j] = rbinom(J, 1, prob_true[,j])
+}
+
+data.frame(person = ID,
+           trial = rep(x = 1:J, times = P),
+           y = as.vector(y),
+           true_y = as.vector(prob_true)
+) |>
+  ggplot(aes(x = trial, y = y)) +
+    geom_point() +
+    geom_line(aes(y = true_y), color = "red") +
+    facet_wrap(~person)
+
+
+#### Sinusoidal sim #####
+prob_true = matrix(NA, nrow=J, ncol=P)
+
+for(i in 1:P){
+  freq = rnorm(1, 7, 1)
+  prob_true[,i] = 0.6+0.3*sin((1:J)/freq)
+}
+
+ID = rep(1:P, each=J)
+
+y= matrix(NA, nrow=J, ncol=P)
+for(j in 1:P){
+  y[,j] = rbinom(J, 1, prob_true[,j])
+}
+
+data.frame(person = ID,
+           trial = rep(x = 1:J, times = P),
+           y = as.vector(y),
+           true_y = as.vector(prob_true)
+) |>
+  ggplot(aes(x = trial, y = y)) +
+  geom_point() +
+  geom_line(aes(y = true_y), color = "red") +
+  facet_wrap(~person)
+```
+

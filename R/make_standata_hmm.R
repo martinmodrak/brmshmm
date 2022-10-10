@@ -3,37 +3,10 @@ make_data_hmm <- function(brmshmmdata) {
 
   formula_processed <- d$formula
   serie_data <- d$serie_data
-  rate_data <- d$rate_data
   hidden_state_data <- d$hidden_state_data
   observed_state_data <- d$observed_state_data
 
   N_states_hidden <- length(unique(c(rate_data$.from, rate_data$.to)))
-
-  N_rates = nrow(rate_data)
-
-
-  N_states_observed <- nrow(observed_state_data)
-
-
-  N_noisy_states <- sum(observed_state_data$is_noisy)
-  if(N_noisy_states > 0) {
-    noisy_states <- observed_state_data %>% filter(is_noisy) %>% pull(id)
-
-    N_other_observations <- observed_state_data %>% select(starts_with("other_obs_")) %>% length()
-    if(N_other_observations < 1) {
-      stop("Noisy states require other_obs_XX columns")
-    }
-
-    noisy_states_other_obs <- observed_state_data %>%
-      filter(is_noisy) %>%
-      select(starts_with("other_obs_")) %>%
-      mutate_all(as.integer) %>%
-      as.matrix()
-  } else {
-    noisy_states = numeric(0)
-    N_other_observations = 1
-    noisy_states_other_obs = array(0, c(0, 1))
-  }
 
 
   N_series <- max(as.integer(serie_data$.serie))
@@ -61,7 +34,9 @@ make_data_hmm <- function(brmshmmdata) {
     serie_data_distinct <- data.frame(.predictor_set = 1)
   }
 
-  brmsdata_all <- crossing(serie_data_distinct, rate_data)
+  predictor_data <- predictor_data_transitions(trans_model)
+
+  brmsdata_all <- crossing(serie_data_distinct, predictor_data)
 
   #TODO avoid repetitions (would only apply if some rates are identical)
   # brmsdata_distinct <- brmsdata_all %>% select(one_of(all_vars_needed)) %>%
@@ -70,27 +45,23 @@ make_data_hmm <- function(brmshmmdata) {
   #
   # brmsdata <- brmsdata_all %>% left_join(
   brmsdata <- brmsdata_all %>%
-    arrange(.predictor_set, .rate_id) %>%
-    mutate(.predictor_id = 1:n(), .dummy = seq(0, 1, length.out = n()))
+    arrange(.predictor_set, .transition_id) %>%
+    mutate(.brms_id = 1:n(), .dummy = seq(0, 1, length.out = n()))
 
   obs_states <- as.integer(serie_data$.observed)
   obs_states[is.na(serie_data$.observed)] <- 0
 
-  rate_predictors <- array(NA_integer_, c(N_predictor_sets, N_rates))
+  predictors <- array(NA_integer_, c(N_predictor_sets, N_rates))
   for(i in 1:nrow(brmsdata)) {
-    rate_predictors[brmsdata$.predictor_set[i], brmsdata$.rate_id[i]] <- brmsdata$.predictor_id[i]
+    predictors[brmsdata$.predictor_set[i], brmsdata$.transition_id[i]] <- brmsdata$.brms_id[i]
   }
 
-  obs_states_rect <- array(0, c(N_series, N_time))
   predictor_sets_rect <- array(0, c(N_series, N_time))
   serie_max_time <- array(0, N_series)
 
   for(o in 1:nrow(serie_data)) {
     s <- as.integer(serie_data$.serie[o])
     t <- serie_data$.time[o]
-    if(!is.na(serie_data$.observed[o])) {
-      obs_states_rect[s, t] = as.integer(serie_data$.observed[o]);
-    }
     serie_max_time[s] = max(serie_max_time[s], t);
     predictor_sets_rect[s, t] = serie_data$.predictor_set[o];
   }
@@ -107,33 +78,28 @@ make_data_hmm <- function(brmshmmdata) {
     }
   }
 
+  init_standata <- make_standata_initial_states(d$init_model)
+  transitions_standata <- make_standata_transitions(d$trans_model)
+  observations_standata <- make_standata_observations(d$obs_model, d$serie_data)
 
-  standata <- loo::nlist(
+  base_standata <- loo::nlist(
     N_states_hidden,
-    N_states_observed,
-    N_rates,
-    rates_from = as.integer(rate_data$.from),
-    rates_to = as.integer(rate_data$.to),
-    corresponding_observation = as.integer(hidden_state_data$corresponding_obs),
-
-    N_noisy_states,
-    noisy_states = as.integer(noisy_states),
-    N_other_observations,
-    noisy_states_other_obs,
-
-    sensitivity_low_bound = d$sensitivity_low_bound,
+    N_predictors <- n_predictors_per_timepoint(d$trans_model),
 
     N_series,
     N_time,
     N_predictor_sets,
 
-    initial_states = as.integer(d$initial_states),
     serie_max_time,
-    obs_states_rect,
     predictor_sets_rect,
-    rate_predictors,
-    optimize_possible = d$optimize_possible
+    predictors#,
+    #optimize_possible = d$optimize_possible
   )
+
+  standata <- c(base_standata, init_standata, transitions_standata, observations_standata)
+  if(length(unique(names(standata))) != length(standata)) {
+    stop("Duplicate names")
+  }
 
   loo::nlist(standata, brmsdata)
 }
