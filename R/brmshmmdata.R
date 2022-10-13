@@ -78,8 +78,8 @@ validate_brmshmmdata <- function(d) {
   d$hidden_state_data <- d$hidden_state_data %>% arrange(as.integer(id))
 
 
-  validate_initial_states(d$init_model, d$serie_data)
-  validate_transitions(d$trans_model)
+  validate_initial_states(d$init_model, d$hidden_state_data, d$serie_data)
+  validate_transitions(d$trans_model, d$hidden_state_data)
   validate_observations(d$obs_model, d$serie_data)
 
 

@@ -1,3 +1,7 @@
+noisy_state_2_state_observations <- function(sensitivity_low_bound = 0.5) {
+  structure(loo::nlist(sensitivity_low_bound), class = "noisy_state_2_state")
+}
+
 validate_observations.noisy_state_2_state <- function(obs_model, serie_data) {
    if(is.null(d$observed_state_data)) {
 
@@ -177,15 +181,7 @@ make_standata_observations.noisy_state_2_state <- function(obs_model, series_dat
     noisy_states_other_obs = array(0, c(0, 1))
   }
 
-  obs_states_rect <- array(0, c(N_series, N_time))
-
-  for(o in 1:nrow(serie_data)) {
-    s <- as.integer(serie_data$.serie[o])
-    t <- serie_data$.time[o]
-    if(!is.na(serie_data$.observed[o])) {
-      obs_states_rect[s, t] = as.integer(serie_data$.observed[o]);
-    }
-  }
+  obs_states_rect <- as.integer(rectangularize_series_column(serie_data, ".observed", missing_value = 0))
 
   loo::nlist(
     N_states_observed,

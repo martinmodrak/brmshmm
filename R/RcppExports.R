@@ -2,10 +2,10 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 rcppeigen_outerproduct <- function(x) {
-    .Call('_covid19retrospective_rcppeigen_outerproduct', PACKAGE = 'covid19retrospective', x)
+    .Call('_brmshmm_rcppeigen_outerproduct', PACKAGE = 'brmshmm', x)
 }
 
 posterior_epred_state_prob_internal <- function(n_samples, max_times, initial_states, n_states, n_time, n_predictor_sets, transition_matrices, predictor_sets_rect) {
-    .Call('_covid19retrospective_posterior_epred_state_prob_internal', PACKAGE = 'covid19retrospective', n_samples, max_times, initial_states, n_states, n_time, n_predictor_sets, transition_matrices, predictor_sets_rect)
+    .Call('_brmshmm_posterior_epred_state_prob_internal', PACKAGE = 'brmshmm', n_samples, max_times, initial_states, n_states, n_time, n_predictor_sets, transition_matrices, predictor_sets_rect)
 }
 

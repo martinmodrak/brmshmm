@@ -6,7 +6,7 @@ make_data_hmm <- function(brmshmmdata) {
   hidden_state_data <- d$hidden_state_data
   observed_state_data <- d$observed_state_data
 
-  N_states_hidden <- length(unique(c(rate_data$.from, rate_data$.to)))
+  N_states_hidden <- nrow(d$hidden_state_data)
 
 
   N_series <- max(as.integer(serie_data$.serie))
@@ -35,6 +35,7 @@ make_data_hmm <- function(brmshmmdata) {
   }
 
   predictor_data <- predictor_data_transitions(trans_model)
+  N_predictors <- n_predictors_per_timepoint(trans_model)
 
   brmsdata_all <- crossing(serie_data_distinct, predictor_data)
 
@@ -51,7 +52,7 @@ make_data_hmm <- function(brmshmmdata) {
   obs_states <- as.integer(serie_data$.observed)
   obs_states[is.na(serie_data$.observed)] <- 0
 
-  predictors <- array(NA_integer_, c(N_predictor_sets, N_rates))
+  predictors <- array(NA_integer_, c(N_predictor_sets, N_predictors))
   for(i in 1:nrow(brmsdata)) {
     predictors[brmsdata$.predictor_set[i], brmsdata$.transition_id[i]] <- brmsdata$.brms_id[i]
   }

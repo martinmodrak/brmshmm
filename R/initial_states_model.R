@@ -20,10 +20,9 @@ validate_initial_states.default <- function(init_model, hidden_state_data, serie
 }
 
 
-known_initial_states <- function(initial_state, sensitivity_low_bound = 0.5) {
+known_initial_states <- function(initial_state) {
   structure(loo::nlist(
-    initial_state,
-    sensitivity_low_bound), class = "known_initial_states")
+    initial_state), class = "known_initial_states")
 }
 
 stanvars_initial_states.known_initial_states <- function(init_model, standata) {

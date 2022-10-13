@@ -6,9 +6,14 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // rcppeigen_outerproduct
 Eigen::MatrixXd rcppeigen_outerproduct(const Eigen::VectorXd& x);
-RcppExport SEXP _covid19retrospective_rcppeigen_outerproduct(SEXP xSEXP) {
+RcppExport SEXP _brmshmm_rcppeigen_outerproduct(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -19,7 +24,7 @@ END_RCPP
 }
 // posterior_epred_state_prob_internal
 Eigen::VectorXd posterior_epred_state_prob_internal(int n_samples, const Eigen::VectorXi& max_times, const Eigen::VectorXi& initial_states, int n_states, int n_time, int n_predictor_sets, const Eigen::VectorXd& transition_matrices, const Eigen::MatrixXi& predictor_sets_rect);
-RcppExport SEXP _covid19retrospective_posterior_epred_state_prob_internal(SEXP n_samplesSEXP, SEXP max_timesSEXP, SEXP initial_statesSEXP, SEXP n_statesSEXP, SEXP n_timeSEXP, SEXP n_predictor_setsSEXP, SEXP transition_matricesSEXP, SEXP predictor_sets_rectSEXP) {
+RcppExport SEXP _brmshmm_posterior_epred_state_prob_internal(SEXP n_samplesSEXP, SEXP max_timesSEXP, SEXP initial_statesSEXP, SEXP n_statesSEXP, SEXP n_timeSEXP, SEXP n_predictor_setsSEXP, SEXP transition_matricesSEXP, SEXP predictor_sets_rectSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -37,12 +42,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_covid19retrospective_rcppeigen_outerproduct", (DL_FUNC) &_covid19retrospective_rcppeigen_outerproduct, 1},
-    {"_covid19retrospective_posterior_epred_state_prob_internal", (DL_FUNC) &_covid19retrospective_posterior_epred_state_prob_internal, 8},
+    {"_brmshmm_rcppeigen_outerproduct", (DL_FUNC) &_brmshmm_rcppeigen_outerproduct, 1},
+    {"_brmshmm_posterior_epred_state_prob_internal", (DL_FUNC) &_brmshmm_posterior_epred_state_prob_internal, 8},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_covid19retrospective(DllInfo *dll) {
+RcppExport void R_init_brmshmm(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

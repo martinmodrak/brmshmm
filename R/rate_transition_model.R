@@ -16,11 +16,11 @@ validate_transitions.rate_transitions <- function(trans_model, hidden_state_data
   #TODO: test for states with no rates
 
   t$rate_data$.from <- validate_id(t$rate_data$.from, "rate_data$.from",
-                                   reference_levels = levels(t$hidden_state_data$id),
+                                   reference_levels = levels(hidden_state_data$id),
                                    reference_levels_for_message = "hidden_state_data$id")
 
   t$rate_data$.to <- validate_id(t$rate_data$.to, "rate_data$.to",
-                                 reference_levels = levels(t$hidden_state_data$id),
+                                 reference_levels = levels(hidden_state_data$id),
                                  reference_levels_for_message = "hidden_state_data$id")
 
   t

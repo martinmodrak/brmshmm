@@ -24,7 +24,7 @@ predictor_data_transitions <- function(trans_model) {
   UseMethod("predictor_data_transitions")
 }
 
-validate_transitions <- function(trans_model) {
+validate_transitions <- function(trans_model, hidden_state_data) {
   UseMethod("validate_transitions")
 }
 
@@ -41,26 +41,4 @@ n_predictors_per_timepoint.default <- function(trans_model) {
   }
 }
 
-categorical_transitions <- function(hidden_state_data, transitions_data) {
-  structure(loo::nlist(hidden_state_data,transitions_data),
-            "brmshmm_categorical_transitions")
-}
-
-family_transitions.brmshmm_categorical_transitions <- function(trans_model) {
-  custom_family(
-    "hmm_categorical", dpars = c("mu"),
-    links = link,
-    type = "real",
-    loop = FALSE)
-}
-
-stanvars_transitions.brmshmm_categorical_transitions <- function(transmodel, standata) {
-  brms::stanvar(scode = categorical_transitions_functions_code, block = "functions")
-}
-
-categorical_transitions_functions_code <- r"(
-  real hmm_categorical_lpdf(vector y, real mu) {
-    return 0;
-  }
-)"
 
