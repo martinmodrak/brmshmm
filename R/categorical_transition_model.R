@@ -1,59 +1,71 @@
-categorical_transitions <- function(trans_data, states_data) {
-  raw <- structure(list(data = trans_data), class = "brmshmm_categorical_transitions")
+
+#' @export
+categorical_transitions <- function(nonref_trans_data, states_data,
+                                    reference_transitions = default_reference_transitions(states_data)) {
+  raw <- structure(loo::nlist(reference_transitions, nonref_trans_data), class = "brmshmm_categorical_transitions")
   validate_transitions.brmshmm_categorical_transitions(raw, states_data)
 }
 
+#' @export
+default_reference_transitions <- function(states_data) {
+  data.frame(.from = states_data$id, .to = states_data$id)
+}
+
+#' @export
 validate_transitions.brmshmm_categorical_transitions <- function(trans_model, states_data) {
   t <- trans_model
-  if(length(setdiff(c(".from", ".to", ".reference"), names(t$data)) > 0)) {
-    stop("Missing required columns")
+  if(length(setdiff(c(".from", ".to"), names(t$nonref_trans_data)) > 0)) {
+    stop("Missing required columns in nonref_trans_data")
   }
-  if(!is.logical(t$data$.reference)) {
-    stop(".reference must be a logical column")
+  if(length(setdiff(c(".from", ".to"), names(t$reference_transitions)) > 0)) {
+    stop("Missing required columns in reference_transitions")
   }
-  if(is.null(t$data$.transition_id)) {
-    auto_ids <- paste0(t$data$.from, "__", t$data$.to)
-    t$data <- t$data %>% mutate(.transition_id = factor(auto_ids, levels = auto_ids))
+
+  if(is.null(t$nonref_trans_data[[".transition_id"]])) {
+    auto_ids <- paste0(t$nonref_trans_data$.from, "__", t$nonref_trans_data$.to)
+    t$nonref_trans_data <- t$nonref_trans_data %>% mutate(.transition_id = factor(auto_ids, levels = auto_ids))
   } else {
-    t$data$.transition_id <- validate_id(t$data$.transition_id, "categorical_transitions::data$.transition_id", force_no_gaps = TRUE)
+    t$nonref_trans_data$.transition_id <- validate_id(t$nonref_trans_data$.transition_id, "categorical_transitions::nonref_trans_data$.transition_id", force_no_gaps = TRUE, force_unique = TRUE)
   }
+
 
 
   #TODO: test for duplicate (from, to)
-  #TODO: test for states with no transitions
-
-  t$data$.from <- validate_id(t$data$.from, "data$.from",
+  if(nrow(t$reference_transitions) != nrow(states_data)) {
+    stop("There has to be the same number of reference transitions as states")
+  }
+  t$reference_transitions$.from <- validate_id(t$reference_transitions$.from, "reference_transitions$.from",
                                    reference_levels = levels(states_data$id),
+                                   force_unique = TRUE,
+                                   force_no_gaps = TRUE,
                                    reference_levels_for_message = "states_data$id")
 
-  t$data$.to <- validate_id(t$data$.to, "data$.to",
+  t$reference_transitions$.to <- validate_id(t$reference_transitions$.to, "reference_transitions$.to",
                                  reference_levels = levels(states_data$id),
                                  reference_levels_for_message = "states_data$id")
 
-  n_ref_transitions <-
-    dplyr::summarise(
-      dplyr::group_by(t$data, .from),
-      n_ref = sum(.reference)
-    )
+  t$reference_transitions <- dplyr::arrange(t$reference_transitions, as.integer(.from))
 
-  bad_refs <- dplyr::filter(n_ref_transitions, n_ref != 1)
-  if(nrow(bad_refs) > 0) {
-    print(bad_refs)
-    stop("Some states do not have a single unique reference transition")
-  }
+  t$nonref_trans_data$.from <- validate_id(t$nonref_trans_data$.from, "nonref_trans_data$.from",
+                                   reference_levels = levels(states_data$id),
+                                   reference_levels_for_message = "states_data$id")
+
+  t$nonref_trans_data$.to <- validate_id(t$nonref_trans_data$.to, "nonref_trans_data$.to",
+                                 reference_levels = levels(states_data$id),
+                                 reference_levels_for_message = "states_data$id")
+
 
   t
 }
 
+#' @export
 make_standata_transitions.brmshmm_categorical_transitions <- function(trans_model, states_data) {
-  data_reference <- dplyr::filter(trans_model$data, .reference)
-  data_other <- dplyr::filter(trans_model$data, !.reference)
-  stopifnot(identical(as.integer(data_reference$.from), 1:nrow(states_data)))
+  t <- trans_model
   list(
-    N_nonref_trans = nrow(data_other),
-    trans_from = as.integer(data_other$.from),
-    trans_to = as.integer(data_other$.to),
-    reference_trans = as.integer(data_reference$.to)
+    N_nonref_trans = nrow(t$nonref_trans_data),
+    trans_from = as.integer(t$nonref_trans_data$.from),
+    trans_to = as.integer(t$nonref_trans_data$.to),
+    reference_trans = as.integer(t$reference_transitions$.to)
   )
 }
 
@@ -66,14 +78,16 @@ categorical_transitions_stanvars_data <- function(standata) {
 }
 
 
+#' @export
 family_transitions.brmshmm_categorical_transitions <- function(trans_model) {
   brms::custom_family(
     "hmm_categorical", dpars = c("mu"),
-    links = "exp",
+    links = "identity",
     type = "real",
     loop = FALSE)
 }
 
+#' @export
 stanvars_transitions.brmshmm_categorical_transitions <- function(transmodel, standata) {
   brms::stanvar(scode = categorical_transitions_functions_code, block = "functions") +
     categorical_transitions_stanvars_data(standata) +
@@ -81,10 +95,12 @@ stanvars_transitions.brmshmm_categorical_transitions <- function(transmodel, sta
     brms::stanvar(scode = categorical_transitions_tdata_code, block = "tdata", position = "end")
 }
 
-predictor_data_transitions.brmshmm_categorical_transitions <- function(transmodel) {
-  transmodel$data
+#' @export
+predictor_data_transitions.brmshmm_categorical_transitions <- function(trans_model) {
+  trans_model$nonref_trans_data
 }
 
+#' @export
 compute_transition_matrix_stancode.brmshmm_categorical_transitions <- function(trans_model, assignment_target) {
   paste0("
     {
@@ -116,7 +132,7 @@ categorical_transitions_functions_code <- r"(
 categorical_transitions_tdata_def <- "
 
   array[N_states_hidden] int<lower=1, upper=N_nonref_trans> trans_start;
-  array[N_states_hidden] int<lower=1, upper=N_states_hidden> N_nonref_trans_state = rep_array(0, N_states_hidden);
+  array[N_states_hidden] int<lower=0, upper=N_states_hidden> N_nonref_trans_state = rep_array(0, N_states_hidden);
 "
 
 categorical_transitions_tdata_code <- "
@@ -134,3 +150,26 @@ categorical_transitions_tdata_code <- "
     }
   }
 "
+
+#' @export
+compute_transition_matrix.brmshmm_categorical_transitions <- function(trans_model, states_data, predictor_values) {
+  t <- validate_transitions.brmshmm_categorical_transitions(trans_model, states_data)
+  if(length(predictor_values) != nrow(t$nonref_trans_data)) {
+    stop("There must be the same number of predictors as non-reference transitions")
+  }
+  N_states <- nrow(states_data)
+  predictor_matrix <- matrix(-Inf, nrow = N_states, ncol = N_states)
+  for(i in 1:N_states) {
+    predictor_matrix[t$reference_transitions$.from[i], t$reference_transitions$.to[i]] <- 0
+  }
+  for(i in 1:nrow(t$nonref_trans_data)) {
+    predictor_matrix[t$nonref_trans_data$.from[i], t$nonref_trans_data$.to[i]] <-
+      predictor_values[as.integer(t$nonref_trans_data$.transition_id[i])]
+  }
+  trans_matrix <- matrix(NA_real_, nrow = N_states, ncol = N_states,
+                         dimnames = list(from = states_data$id, to = states_data$id))
+  for(i in 1:N_states) {
+    trans_matrix[i, ] <- brms:::softmax(predictor_matrix[i,])
+  }
+  trans_matrix
+}

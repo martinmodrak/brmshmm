@@ -5,7 +5,7 @@ ordered_binary_observations <- function(column) {
 make_standata_observations.brmshmm_ordered_binary_observations <- function(obs_model, series_data) {
   obs_rect <- rectangularize_series_column(series_data, obs_model$column)
   list(
-    is_observed = is.na(obs_rect),
+    is_observed = !is.na(obs_rect),
     observations = tidyr::replace_na(obs_rect, 0)
   )
 }
@@ -32,5 +32,8 @@ is_observed_stancode.brmshmm_ordered_binary_observations <- function(obs_model, 
 
 validate_observations.brmshmm_ordered_binary_observations <- function(obs_model, series_data) {
   stopifnot(is.logical(series_data[[obs_model$column]]))
+  if(sum(!is.na(series_data[[obs_model$column]])) < 2) {
+    stop("At least two non-missing observations are required")
+  }
   obs_model
 }

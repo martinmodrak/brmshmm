@@ -19,24 +19,45 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 devtools::load_all()
+options(mc.cores = parallel::detectCores())
 ```
 
 
 ```{r}
 states <- data.frame(id = factor(c("Low", "High"), levels = c("Low", "High")))
-trans_data <- tribble(~.from, ~.to, ~.reference,
-                      "Low", "Low", TRUE,
-                      "Low", "High", FALSE,
-                      "High", "High", TRUE,
-                      "High", "Low", FALSE
+nonref_trans_data <- tribble(~.from, ~.to,
+                      "Low", "High", 
+                      "High", "Low"
                       )
-trans_model <- categorical_transitions(trans_data, states)
+trans_model <- categorical_transitions(nonref_trans_data, states)
 
-series_data <- tidyr::crossing(.serie = 1:3, .time = 1:10) |>
-  mutate(observed = as.logical(rbinom(n(), size = 1, prob = if_else(.time < 5, 0.7, 0.3))))
+trueIntercepts <- c(-1,-0.5)
+tm <- compute_transition_matrix(trans_model, states, trueIntercepts)
+tm
+emitprob <- c(0.1,0.9)
+
+N_series <- 50
+N_time <- 10
+
+init_states <- rep(factor("High", levels = levels(states$id)), N_series)
+states_rect <- matrix(NA_integer_, nrow = N_series, ncol = N_time)
+states_rect[, 1] <- as.integer(init_states)
+for(s in 1:N_series) {
+  for(t in 2:N_time) {
+    states_rect[s, t] <- sample(1:nrow(states), prob = tm[states_rect[s, t- 1],], size = 1)
+  }
+}
+
+
+series_data <- tidyr::crossing(.serie = 1:N_series, .time = 1:N_time, observed = NA)
+for(i in 1:nrow(series_data)) {
+  series_data$observed[i] <- rbinom(1, size = 1, prob = emitprob[states_rect[series_data$.serie[i],series_data$.time[i]]])
+}
+series_data$observed <- as.logical(series_data$observed)
+
 
 obs_model <- ordered_binary_observations("observed")
-init_model <- known_initial_states(rep("Low", 3))        
+init_model <- known_initial_states(init_states)        
 
 hmm <- brmshmmdata(~ 0 + .transition_id, series_data,
                    states_data = states,
@@ -46,14 +67,18 @@ hmm <- brmshmmdata(~ 0 + .transition_id, series_data,
 
 ```
 
+```{r}
+```
+
 
 ```{r}
 #file.remove(list.files(here::here("temp_data"), pattern = ".stan", full.names = TRUE))
 scode <- make_stancode_hmm(hmm)                   
 file <- cmdstanr::write_stan_file(scode, dir = here::here("temp_data"))
 m <- cmdstan_model(file)
+#m <- cmdstan_model(here::here("temp_data/test.stan"))
 d <- make_standata_hmm(hmm)
-res <- m$sample(d, refresh = 500)
+res <- m$sample(d)
 ```
 
 ```{r}
