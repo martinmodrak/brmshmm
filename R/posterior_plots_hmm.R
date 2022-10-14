@@ -12,7 +12,7 @@ posterior_state_plot <- function(predictions_df, series_id = unique(predictions_
 
   if(!is.factor(predictions_df$.predicted)) {
     if(!is.null(observed_data) && is.null(predicted_labels)) {
-      predicted_labels <- levels(observed_data$serie_data$.observed)
+      predicted_labels <- levels(observed_data$series_data$.observed)
     }
 
     if(!is.null(predicted_labels)) {
@@ -35,7 +35,7 @@ posterior_state_plot <- function(predictions_df, series_id = unique(predictions_
 
   if(!is.null(observed_data)) {
     observed_data <- validate_brmshmmdata(observed_data)
-    observed_data_plot <- observed_data$serie_data %>% filter(.serie %in% series_id, !is.na(.observed))
+    observed_data_plot <- observed_data$series_data %>% filter(.serie %in% series_id, !is.na(.observed))
     observed_geom <- geom_line(data = observed_data_plot, aes(x = .time, y = .observed, group = .serie), color = data_color, inherit.aes = FALSE, size = 2)
   } else {
     observed_geom <- NULL
@@ -188,7 +188,7 @@ do_common_pp_checks <- function(fit) {
 
   predicted_df <- posterior_long_to_df(fit$data, predicted)
 
-  all_ids <- fit$data$serie_data %>% select(hospital_id, .serie) %>%
+  all_ids <- fit$data$series_data %>% select(hospital_id, .serie) %>%
     distinct() %>% arrange(hospital_id) %>% pull(.serie)
   step_size <- 6
   for(step in 1:ceiling(length(all_ids) / step_size)) {

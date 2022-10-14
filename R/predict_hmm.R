@@ -24,7 +24,7 @@ posterior_epred_rect <- function(fit, nsamples = NULL, newdata = NULL, method = 
     nsamples <- dim(epred_mu)[1]
   }
 
-  max_times <- pred_rawdata$serie_data %>% group_by(.serie) %>% summarise(max_time = max(.time)) %>%
+  max_times <- pred_rawdata$series_data %>% group_by(.serie) %>% summarise(max_time = max(.time)) %>%
     arrange(.serie) %>% pull(max_time)
 
   method(
@@ -109,10 +109,10 @@ posterior_rect_to_long <- function(fit, posterior_rect, newdata = NULL) {
     pred_rawdata <- newdata
   }
 
-  result <- array(NA_integer_, c(nsamples, nrow(pred_rawdata$serie_data)))
+  result <- array(NA_integer_, c(nsamples, nrow(pred_rawdata$series_data)))
 
-  for(o in 1:nrow(pred_rawdata$serie_data)) {
-    result_for_row <- posterior_rect[pred_rawdata$serie_data$.time[o], as.integer(pred_rawdata$serie_data$.serie[o]), ]
+  for(o in 1:nrow(pred_rawdata$series_data)) {
+    result_for_row <- posterior_rect[pred_rawdata$series_data$.time[o], as.integer(pred_rawdata$series_data$.serie[o]), ]
     if(any(is.na(result_for_row))) {
       stop(paste0("NA for row ", o))
     }
@@ -213,7 +213,7 @@ posterior_long_to_df <- function(data, prediction) {
   samples_df <- as.data.frame(t(prediction))
   names(samples_df) <- paste0("__S", 1:nsamples)
 
-  data$serie_data %>% cbind(samples_df) %>%
+  data$series_data %>% cbind(samples_df) %>%
     pivot_longer(matches("^__S[0-9]*$"), names_prefix = "__S", names_to = ".sample", values_to = ".predicted") %>%
     mutate(.sample = as.integer(.sample))
 

@@ -11,12 +11,13 @@ make_stancode_hmm <- function(brmshmmdata) {
 
   data <- make_data_hmm(d)
   all_stanvars <-
-    stanvars_initial_states(brmshmmdata$init_model, d$standata) +
-    stanvars_transitions(brmshmmdata$trans_model, d$standata) +
-    stanvars_observations(brmshmmdata$obs_model, d$standata) +
-    stanvars_base_hmm(d$standata)
+    stanvars_base_hmm_api(d, data$standata) +
+    stanvars_initial_states(d$init_model, data$standata) +
+    stanvars_transitions(d$trans_model, data$standata) +
+    stanvars_observations(d$obs_model, data$standata) +
+    stanvars_base_hmm_code(d, data$standata)
 
-  brms::make_stancode(d$formula, family = family_transitions(brmshmmdata$transition_model),
+  brms::make_stancode(d$formula, family = family_transitions(d$trans_model),
                       data = data$brmsdata,
                       stanvars = all_stanvars, prior = d$prior)
 }
@@ -26,13 +27,19 @@ make_stancode_hmm <- function(brmshmmdata) {
 # }
 
 
-stanvars_base_hmm <- function(standata) {
-
+stanvars_base_hmm_api <- function(brmshmmdata, standata) {
   base_hmm_stanvars_data(standata) +
     brms::stanvar(scode = base_hmm_tdata_code, block = "tdata", position = "end") +
-    brms::stanvar(scode = hmm_log_lik_definitions, block = "likelihood", position = "start") +
-    brms::stanvar(scode = hmm_log_lik_code, block = "likelihood", position = "start")
+    brms::stanvar(scode = hmm_log_lik_definitions, block = "likelihood", position = "start")
 }
+
+stanvars_base_hmm_code <- function(brmshmmdata, standata) {
+  log_lik_code <- hmm_log_lik_code(
+    brmshmmdata$init_model, brmshmmdata$trans_model, brmshmmdata$obs_model)
+
+  brms::stanvar(scode = log_lik_code, block = "likelihood", position = "end")
+}
+
 
 base_hmm_stanvars_data  <- function(standata) {
   brms::stanvar(x = standata$N_states_hidden, name = "N_states_hidden", scode = "  // HMM data\n  int<lower=1> N_states_hidden;", block = "data") +
@@ -42,10 +49,10 @@ base_hmm_stanvars_data  <- function(standata) {
   brms::stanvar(x = standata$N_predictors, name = "N_predictors", scode = "  int<lower=1> N_predictors;", block = "data") +
   brms::stanvar(x = standata$N_predictor_sets, name = "N_predictor_sets", scode = "  int<lower=1> N_predictor_sets;", block = "data") +
 
-  brms::stanvar(x = standata$serie_max_time, name = "serie_max_time", scode = "  int<lower=1, upper=N_time> serie_max_time[N_series];", block = "data") +
+  brms::stanvar(x = standata$serie_max_time, name = "serie_max_time", scode = "array[N_series] int<lower=1, upper=N_time> serie_max_time;", block = "data") +
 
-  brms::stanvar(x = standata$predictor_sets_rect, name = "predictor_sets_rect", scode = "  int<lower=0, upper=N_predictor_sets> predictor_sets_rect[N_series, N_time];", block = "data") +
-  brms::stanvar(x = standata$predictors, name = "predictors", scode = "  int<lower=1, upper=N> predictors[N_predictor_sets, N_predictors];", block = "data")
+  brms::stanvar(x = standata$predictor_sets_rect, name = "predictor_sets_rect", scode = "array[N_series, N_time] int<lower=0, upper=N_predictor_sets> predictor_sets_rect;", block = "data") +
+  brms::stanvar(x = standata$predictors, name = "predictors", scode = "array[N_predictor_sets, N_predictors]  int<lower=1, upper=N> predictors;", block = "data")
   #TODO once possible is reintroduced
   #brms::stanvar(x = standata$optimize_possible, name = "optimize_possible", scode = "  int<lower=0, upper=2> optimize_possible;", block = "data")
 }
@@ -62,7 +69,7 @@ base_hmm_tdata_code <- r"(
 )"
 
 hmm_log_lik_definitions <- "
-  matrix[N_states_hidden, N_states_hidden] transition_matrices_t[N_predictor_sets];
+  array[N_predictor_sets] matrix[N_states_hidden, N_states_hidden] transition_matrices_t;
 "
 
 hmm_log_lik_code <- function(init_model, trans_model, obs_model) {
@@ -105,9 +112,9 @@ paste0(
     for(t in 2:serie_max_time[s]) {
       real col_norm;
       int ps = predictor_sets_rect[s, t - 1];
-      int is_observed;
-      ",  is_observed_stancode(obs_model, "is_observed", time_expr = "t", series_expr = "s"), "
-      if(is_observed) {
+      int is_observed_current;
+      ",  is_observed_stancode(obs_model, "is_observed_current", time_expr = "t", series_expr = "s"), "
+      if(is_observed_current) {
         //Oberved something.
         vector[N_states_hidden] obs_probs;
         vector[N_states_hidden] transition_probs;
@@ -150,6 +157,7 @@ paste0(
       alpha_log_norms[t] = log(col_norm) + alpha_log_norms[t - 1];
     }
     target += log(sum(alpha[,serie_max_time[s]])) + alpha_log_norms[serie_max_time[s]];
+  }
 "
 )
 }

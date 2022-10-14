@@ -1,24 +1,24 @@
-compute_counterfactual_outcome_samples <- function(hmm_fit, numerator_serie_data, denominator_serie_data, day = 28,
+compute_counterfactual_outcome_samples <- function(hmm_fit, numerator_series_data, denominator_series_data, day = 28,
                                                     cl = NULL, cores = parallel::detectCores()) {
-  if(nrow(numerator_serie_data) != nrow(denominator_serie_data)) {
+  if(nrow(numerator_series_data) != nrow(denominator_series_data)) {
     stop("Groups to compare must have equal number of rows")
   }
 
   combined_data <- hmm_fit$data
-  combined_data$serie_data = rbind(
-    numerator_serie_data %>% mutate(.serie = paste0("__num_", .serie), is_numerator = TRUE),
-    denominator_serie_data %>% mutate(.serie = paste0("__denom_", .serie), is_numerator = FALSE)
+  combined_data$series_data = rbind(
+    numerator_series_data %>% mutate(.serie = paste0("__num_", .serie), is_numerator = TRUE),
+    denominator_series_data %>% mutate(.serie = paste0("__denom_", .serie), is_numerator = FALSE)
   ) %>%
     mutate(.serie = factor(.serie))
 
   combined_data$initial_states = rep(hmm_fit$data$initial_states, 2)
 
-  death_state_id <- which(hmm_fit$data$hidden_state_data$id == "Death")
-  discharged_state_id <- which(hmm_fit$data$hidden_state_data$id == "Discharged")
+  death_state_id <- which(hmm_fit$data$states_data$id == "Death")
+  discharged_state_id <- which(hmm_fit$data$states_data$id == "Discharged")
 
-  numerator_indices <- unique(as.integer(combined_data$serie_data$.serie)[combined_data$serie_data$is_numerator])
-  denominator_indices <- unique(as.integer(combined_data$serie_data$.serie)[!combined_data$serie_data$is_numerator])
-  if(!identical(sort(c(numerator_indices, denominator_indices)), 1:length(unique(combined_data$serie_data$.serie)))) {
+  numerator_indices <- unique(as.integer(combined_data$series_data$.serie)[combined_data$series_data$is_numerator])
+  denominator_indices <- unique(as.integer(combined_data$series_data$.serie)[!combined_data$series_data$is_numerator])
+  if(!identical(sort(c(numerator_indices, denominator_indices)), 1:length(unique(combined_data$series_data$.serie)))) {
     stop("Bad indexing")
   }
 
@@ -72,11 +72,11 @@ compute_counterfactual_outcome_samples <- function(hmm_fit, numerator_serie_data
   )
 }
 
-evaluate_treatment_hypothesis <- function(fit, serie_data_28, hypothesis_mortality, hypothesis_hospital, treatment_column, model_subgroup,
+evaluate_treatment_hypothesis <- function(fit, series_data_28, hypothesis_mortality, hypothesis_hospital, treatment_column, model_subgroup,
                                           adjusted, model_check, cl = NULL, cores = parallel::detectCores()
                                           ) {
-  counterfactual_took <- serie_data_28 %>% mutate({{ treatment_column }} := 1)
-  counterfactual_no <- serie_data_28 %>% mutate({{treatment_column }} := 0)
+  counterfactual_took <- series_data_28 %>% mutate({{ treatment_column }} := 1)
+  counterfactual_no <- series_data_28 %>% mutate({{treatment_column }} := 0)
 
   counterfactual_res <- compute_counterfactual_outcome_samples(fit, counterfactual_took, counterfactual_no, day = 28, cl = cl, cores = cores)
 
@@ -108,11 +108,11 @@ evaluate_treatment_hypothesis <- function(fit, serie_data_28, hypothesis_mortali
   )
 }
 
-evaluate_all_treatment_hypotheses <- function(fit, model_subgroup, adjusted, model_check, serie_data_28 = serie_data_28,
+evaluate_all_treatment_hypotheses <- function(fit, model_subgroup, adjusted, model_check, series_data_28 = series_data_28,
                                               cl = NULL, cores = parallel::detectCores(), cache = "auto") {
   res <- NULL
   if(cache == "auto") {
-    all_params <- list(fit, serie_data_28)
+    all_params <- list(fit, series_data_28)
 
     cache_dir <- here::here("local_temp_data", "hmm", "epred_cache")
     if(!dir.exists(cache_dir)) {
@@ -126,9 +126,9 @@ evaluate_all_treatment_hypotheses <- function(fit, model_subgroup, adjusted, mod
 
   if(is.null(res)) {
     res <- rbind(
-      evaluate_treatment_hypothesis(fit, serie_data_28, hypotheses$hcq_death, hypotheses$hcq_hospital, took_hcq, model_subgroup = model_subgroup, adjusted = adjusted, model_check = model_check, cl = cl, cores = cores),
-      evaluate_treatment_hypothesis(fit, serie_data_28, hypotheses$az_death, hypotheses$az_hospital, took_az, model_subgroup = model_subgroup, adjusted = adjusted, model_check = model_check, cl = cl, cores = cores),
-      evaluate_treatment_hypothesis(fit, serie_data_28, hypotheses$favipiravir_death, hypotheses$favipiravir_hospital, took_favipiravir, model_subgroup = model_subgroup, adjusted = adjusted, model_check = model_check, cl = cl, cores = cores)
+      evaluate_treatment_hypothesis(fit, series_data_28, hypotheses$hcq_death, hypotheses$hcq_hospital, took_hcq, model_subgroup = model_subgroup, adjusted = adjusted, model_check = model_check, cl = cl, cores = cores),
+      evaluate_treatment_hypothesis(fit, series_data_28, hypotheses$az_death, hypotheses$az_hospital, took_az, model_subgroup = model_subgroup, adjusted = adjusted, model_check = model_check, cl = cl, cores = cores),
+      evaluate_treatment_hypothesis(fit, series_data_28, hypotheses$favipiravir_death, hypotheses$favipiravir_hospital, took_favipiravir, model_subgroup = model_subgroup, adjusted = adjusted, model_check = model_check, cl = cl, cores = cores)
     )
     if(cache == "auto") {
       saveRDS(res, cache_file)

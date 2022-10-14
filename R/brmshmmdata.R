@@ -3,8 +3,8 @@
 #' some overhead and so can be turned of. Takes values 0 - no such optimalization),
 #'  1 - avoid redundant rows in matrix to multiply and 2 - also avoid some multiplications.
 brmshmmdata <- function(formula,
-                        serie_data,
-                        hidden_state_data,
+                        series_data,
+                        states_data,
                         init_model,
                         trans_model,
                         obs_model,
@@ -15,8 +15,8 @@ brmshmmdata <- function(formula,
   validate_brmshmmdata(
     structure(loo::nlist(
       formula = make_brms_formula_hmm(formula),
-      serie_data,
-      hidden_state_data,
+      series_data,
+      states_data,
       init_model,
       trans_model,
       obs_model,
@@ -71,19 +71,19 @@ validate_brmshmmdata <- function(d) {
     stop("Must be of class brmshmmdata")
   }
 
-  d$serie_data <- dplyr::ungroup(d$serie_data)
-  d$hidden_state_data <- dplyr::ungroup(d$hidden_state_data)
+  d$series_data <- dplyr::ungroup(d$series_data)
+  d$states_data <- dplyr::ungroup(d$states_data)
 
-  d$hidden_state_data$id <- validate_id(d$hidden_state_data$id, "hidden_state_data$id", force_unique = TRUE, force_no_gaps = TRUE)
-  d$hidden_state_data <- d$hidden_state_data %>% arrange(as.integer(id))
-
-
-  validate_initial_states(d$init_model, d$hidden_state_data, d$serie_data)
-  validate_transitions(d$trans_model, d$hidden_state_data)
-  validate_observations(d$obs_model, d$serie_data)
+  d$states_data$id <- validate_id(d$states_data$id, "states_data$id", force_unique = TRUE, force_no_gaps = TRUE)
+  d$states_data <- d$states_data %>% arrange(as.integer(id))
 
 
-  d$serie_data$.serie <- validate_id(d$serie_data$.serie, "serie_data$.serie",
+  d$init_model <- validate_initial_states(d$init_model, d$states_data, d$series_data)
+  d$trans_model <- validate_transitions(d$trans_model, d$states_data)
+  d$obs_model <- validate_observations(d$obs_model, d$series_data)
+
+
+  d$series_data$.serie <- validate_id(d$series_data$.serie, "series_data$.serie",
                                      force_no_gaps = TRUE)
 
   d

@@ -1,4 +1,4 @@
-validate_transitions.rate_transitions <- function(trans_model, hidden_state_data) {
+validate_transitions.rate_transitions <- function(trans_model, states_data) {
   t <- trans_model
   if(is.null(t$rate_data$.rate_id)) {
     t$rate_data <- t$rate_data %>% mutate(.rate_id = factor(1:n()))
@@ -16,12 +16,12 @@ validate_transitions.rate_transitions <- function(trans_model, hidden_state_data
   #TODO: test for states with no rates
 
   t$rate_data$.from <- validate_id(t$rate_data$.from, "rate_data$.from",
-                                   reference_levels = levels(hidden_state_data$id),
-                                   reference_levels_for_message = "hidden_state_data$id")
+                                   reference_levels = levels(states_data$id),
+                                   reference_levels_for_message = "states_data$id")
 
   t$rate_data$.to <- validate_id(t$rate_data$.to, "rate_data$.to",
-                                 reference_levels = levels(hidden_state_data$id),
-                                 reference_levels_for_message = "hidden_state_data$id")
+                                 reference_levels = levels(states_data$id),
+                                 reference_levels_for_message = "states_data$id")
 
   t
 }
@@ -58,7 +58,7 @@ compute_transition_matrix_stancode.rate_transitions <-  function(trans_model, as
 
 }
 
-make_standata_transitions.rate_transitions <- function(trans_model){
+make_standata_transitions.rate_transitions <- function(trans_model, states_data){
   rate_data <- trans_model$rate_data
 
   loo::nlist(

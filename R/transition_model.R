@@ -1,6 +1,6 @@
 # Compute a single transition matrix
 # The first matrix index is 'from', second is 'to'
-make_standata_transitions <- function(trans_model, hmmdata) {
+make_standata_transitions <- function(trans_model, states_data) {
   UseMethod("make_standata_transitions")
 }
 
@@ -24,7 +24,7 @@ predictor_data_transitions <- function(trans_model) {
   UseMethod("predictor_data_transitions")
 }
 
-validate_transitions <- function(trans_model, hidden_state_data) {
+validate_transitions <- function(trans_model, states_data) {
   UseMethod("validate_transitions")
 }
 
@@ -37,7 +37,7 @@ n_predictors_per_timepoint.default <- function(trans_model) {
   if(is.null(predictor_data)) {
     0
   } else {
-    nrow(predictor_data_transitions)
+    nrow(predictor_data)
   }
 }
 

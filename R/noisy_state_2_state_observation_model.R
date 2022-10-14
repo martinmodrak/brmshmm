@@ -2,17 +2,17 @@ noisy_state_2_state_observations <- function(sensitivity_low_bound = 0.5) {
   structure(loo::nlist(sensitivity_low_bound), class = "noisy_state_2_state")
 }
 
-validate_observations.noisy_state_2_state <- function(obs_model, serie_data) {
+validate_observations.noisy_state_2_state <- function(obs_model, series_data) {
    if(is.null(d$observed_state_data)) {
 
-    d$hidden_state_data$corresponding_obs <-
-      validate_id(d$hidden_state_data$corresponding_obs, "corresponding_obs (without observed data)", force_no_gaps = TRUE)
+    d$states_data$corresponding_obs <-
+      validate_id(d$states_data$corresponding_obs, "corresponding_obs (without observed data)", force_no_gaps = TRUE)
 
 
-    d$observed_state_data <- data.frame(id = levels(d$hidden_state_data$corresponding_obs), is_noisy = FALSE)
+    d$observed_state_data <- data.frame(id = levels(d$states_data$corresponding_obs), is_noisy = FALSE)
   } else {
-    d$hidden_state_data$corresponding_obs <-
-      validate_id(d$hidden_state_data$corresponding_obs, "corresponding_obs", force_no_gaps = TRUE,
+    d$states_data$corresponding_obs <-
+      validate_id(d$states_data$corresponding_obs, "corresponding_obs", force_no_gaps = TRUE,
                   reference_levels = levels(d$observed_state_data$id), reference_levels_for_message = "observed_state_data$id")
   }
 
@@ -28,11 +28,11 @@ validate_observations.noisy_state_2_state <- function(obs_model, serie_data) {
   }
 
   d$initial_states <- validate_id(d$initial_states, "initial_states", force_unique = FALSE,
-                                  force_no_gaps = FALSE, reference_levels = levels(d$hidden_state_data$id),
-                                  reference_levels_for_message = "hidden_state_data$id")
+                                  force_no_gaps = FALSE, reference_levels = levels(d$states_data$id),
+                                  reference_levels_for_message = "states_data$id")
 
 
-  d$serie_data$.observed <- validate_id(d$serie_data$.observed, "serie_data$.observed",
+  d$series_data$.observed <- validate_id(d$series_data$.observed, "series_data$.observed",
                                         force_no_na = FALSE,
                                         reference_levels = levels(d$observed_state_data$id),
                                         reference_levels_for_message = "observed_state_data$id")
@@ -181,11 +181,11 @@ make_standata_observations.noisy_state_2_state <- function(obs_model, series_dat
     noisy_states_other_obs = array(0, c(0, 1))
   }
 
-  obs_states_rect <- as.integer(rectangularize_series_column(serie_data, ".observed", missing_value = 0))
+  obs_states_rect <- as.integer(rectangularize_series_column(series_data, ".observed", missing_value = 0))
 
   loo::nlist(
     N_states_observed,
-    corresponding_observation = as.integer(hidden_state_data$corresponding_obs),
+    corresponding_observation = as.integer(states_data$corresponding_obs),
 
     N_noisy_states,
     noisy_states = as.integer(noisy_states),

@@ -1,4 +1,4 @@
-validate_initial_states <- function(init_model, hidden_state_data, serie_data) {
+validate_initial_states <- function(init_model, states_data, series_data) {
   UseMethod("validate_initial_states")
 }
 
@@ -14,19 +14,19 @@ initial_states_probability_stancode <- function(init_model, assignment_target, s
   UseMethod("initial_states_probability_stancode")
 }
 
-validate_initial_states.default <- function(init_model, hidden_state_data, serie_data) {
+validate_initial_states.default <- function(init_model, states_data, series_data) {
   #No validation by default
   init_model
 }
 
 
-known_initial_states <- function(initial_state) {
+known_initial_states <- function(initial_states) {
   structure(loo::nlist(
-    initial_state), class = "known_initial_states")
+    initial_states), class = "known_initial_states")
 }
 
 stanvars_initial_states.known_initial_states <- function(init_model, standata) {
-  brms::stanvar(x = standata$initial_states, name = "initial_states", scode = "  int<lower=1, upper=N_states_hidden> initial_states[N_series];", block = "data")
+  brms::stanvar(x = standata$initial_states, name = "initial_states", scode = "array[N_series]  int<lower=1, upper=N_states_hidden> initial_states;", block = "data")
 }
 
 initial_states_probability_stancode.known_initial_states <- function(init_model, assignment_target, series_expr) {
@@ -39,12 +39,16 @@ initial_states_probability_stancode.known_initial_states <- function(init_model,
 }
 
 
-validate_initial_states.known_initial_states <- function(init_model, hidden_state_data, serie_data) {
+validate_initial_states.known_initial_states <- function(init_model, states_data, series_data) {
   #TODO make the binding between initial states and series explicit
-  if(length(init_model$initial_state) != length(unique(serie_data$.serie))) {
+  if(length(init_model$initial_states) != length(unique(series_data$.serie))) {
     stop("Incorrect number of initial states")
   }
-  #TODO validate against hidden_state_data
+
+  init_model$initial_states <- validate_id(init_model$initial_states, "init_model$initial_states",
+                                           force_no_na = TRUE, reference_levels = states_data$id,
+                                           reference_levels_for_message = "states_data$id")
+
   init_model
 }
 

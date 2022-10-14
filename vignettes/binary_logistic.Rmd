@@ -13,6 +13,7 @@ vignette: >
 library(tibble)
 library(dplyr)
 library(tidyr)
+library(cmdstanr)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -31,19 +32,35 @@ trans_data <- tribble(~.from, ~.to, ~.reference,
                       )
 trans_model <- categorical_transitions(trans_data, states)
 
-serie_data <- tidyr::crossing(.serie = 1:3, .time = 1:10) |>
+series_data <- tidyr::crossing(.serie = 1:3, .time = 1:10) |>
   mutate(observed = as.logical(rbinom(n(), size = 1, prob = if_else(.time < 5, 0.7, 0.3))))
 
 obs_model <- ordered_binary_observations("observed")
 init_model <- known_initial_states(rep("Low", 3))        
 
-hmm <- brmshmmdata(~ 1, serie_data,
-                   hidden_state_data = states,
+hmm <- brmshmmdata(~ 0 + .transition_id, series_data,
+                   states_data = states,
                    init_model = init_model,
                    trans_model = trans_model,
                    obs_model = obs_model)
 
-make_stancode_hmm(hmm)                   
+```
+
+
+```{r}
+#file.remove(list.files(here::here("temp_data"), pattern = ".stan", full.names = TRUE))
+scode <- make_stancode_hmm(hmm)                   
+file <- cmdstanr::write_stan_file(scode, dir = here::here("temp_data"))
+m <- cmdstan_model(file)
+d <- make_standata_hmm(hmm)
+res <- m$sample(d, refresh = 500)
+```
+
+```{r}
+res$cmdstan_summary()
+```
+```{r}
+shinystan::launch_shinystan(rstan::read_stan_csv(res$output_files()))
 ```
 
 

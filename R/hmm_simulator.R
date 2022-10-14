@@ -160,7 +160,7 @@ hmm_simulator <- function(N_series, N_time, N_mid_states, use_noisy_states = FAL
   sensitivity <- runif(N_noisy_states, min = sensitivity_low_bound, max = 1)
 
 
-  hidden_state_data <- data.frame(id = 1:N_states_hidden,
+  states_data <- data.frame(id = 1:N_states_hidden,
                           corresponding_obs = corresponding_observation)
 
 
@@ -251,7 +251,7 @@ hmm_simulator <- function(N_series, N_time, N_mid_states, use_noisy_states = FAL
     observed = brmshmmdata(
         formula = model_formula,
         prior = prior,
-        serie_data = data.frame(
+        series_data = data.frame(
           .serie = as.integer(series),
           .time = as.integer(times),
           .observed = as.integer(obs_states),
@@ -265,7 +265,7 @@ hmm_simulator <- function(N_series, N_time, N_mid_states, use_noisy_states = FAL
           rate_improve_one = as.numeric(rates_group == "improve_one"),
           rate_worsen_one = as.numeric(rates_group == "worsen_one")
         ),
-        hidden_state_data = hidden_state_data,
+        states_data = states_data,
         initial_states = initial_states,
         sensitivity_low_bound = sensitivity_low_bound,
         observed_state_data = observed_state_data
