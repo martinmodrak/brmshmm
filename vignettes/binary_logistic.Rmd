@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 devtools::load_all()
-options(mc.cores = parallel::detectCores())
+options(mc.cores = parallel::detectCores(), brms.backend = "cmdstanr")
 ```
 
 
@@ -36,10 +36,10 @@ tm <- compute_transition_matrix(trans_model, states, trueIntercepts)
 tm
 emitprob <- c(0.1,0.9)
 
-N_series <- 50
-N_time <- 10
+N_series <- 100
+N_time <- 30
 
-init_states <- rep(factor("High", levels = levels(states$id)), N_series)
+init_states <- rep(factor(c("Low","High"), levels = levels(states$id)), length.out = N_series)
 states_rect <- matrix(NA_integer_, nrow = N_series, ncol = N_time)
 states_rect[, 1] <- as.integer(init_states)
 for(s in 1:N_series) {
@@ -79,10 +79,18 @@ m <- cmdstan_model(file)
 #m <- cmdstan_model(here::here("temp_data/test.stan"))
 d <- make_standata_hmm(hmm)
 res <- m$sample(d)
+res$cmdstan_summary()
+
 ```
 
 ```{r}
-res$cmdstan_summary()
+hmmfit <- brmhmm(hmm)
+summary(hmmfit)
+rstan::summary(hmmfit$brmsfit$fit)$summary
+```
+
+
+```{r}
 ```
 ```{r}
 shinystan::launch_shinystan(rstan::read_stan_csv(res$output_files()))

@@ -14,8 +14,16 @@ make_standata_observations.brmshmm_ordered_binary_observations <- function(obs_m
 stanvars_observations.brmshmm_ordered_binary_observations <- function(obs_model, standata) {
   brms::stanvar(x = standata$is_observed, name = "is_observed", scode = "array[N_series, N_time] int<lower=0,upper=1> is_observed;", block = "data") +
     brms::stanvar(standata$observations, name = "observations", scode = "array[N_series, N_time] int<lower=0,upper=1> observations;", block = "data") +
-    brms::stanvar(scode = "ordered[N_states_hidden] logit_emit_prob;", block = "parameters") +
-    brms::stanvar(scode = "vector<lower=0, upper=1>[N_states_hidden] emit_prob = inv_logit(logit_emit_prob);", block = "tparameters") +
+#    brms::stanvar(scode = "  vector[N_states_hidden] raw_emit_prob;", block = "parameters") +
+#    brms::stanvar(scode = "  vector<lower=0, upper=1>[N_states_hidden] emit_prob;", block = "tparameters", position = "start") +
+#     brms::stanvar(scode = "  emit_prob[1] = inv_logit(raw_emit_prob[1]);
+#   for(i in 2:N_states_hidden) {
+#     real part = inv_logit(raw_emit_prob[i]);
+#     emit_prob[i] = emit_prob[i - 1] + part*(1 - emit_prob[i - 1]);
+#   }
+# ", block = "tparameters", position = "end") +
+   brms::stanvar(scode = "ordered[N_states_hidden] logit_emit_prob;", block = "parameters") +
+   brms::stanvar(scode = "vector<lower=0, upper=1>[N_states_hidden] emit_prob = inv_logit(logit_emit_prob);", block = "tparameters") +
     brms::stanvar(scode = "vector[N_states_hidden] not_emit_prob = 1 - emit_prob;", block = "likelihood", position = "start")
 }
 

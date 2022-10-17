@@ -1,4 +1,4 @@
-make_data_hmm <- function(brmshmmdata) {
+prepare_data_hmm <- function(brmshmmdata) {
   d <- validate_brmshmmdata(brmshmmdata)
 
   formula_processed <- d$formula
@@ -99,12 +99,12 @@ make_data_hmm <- function(brmshmmdata) {
     stop("Duplicate names")
   }
 
-  loo::nlist(standata, brmsdata)
+  structure(loo::nlist(standata, brmsdata), class = "brmshmmdata_prepared")
 }
 
 make_standata_hmm <- function(brmshmmdata) {
   d <- validate_brmshmmdata(brmshmmdata)
 
-  data <- make_data_hmm(d)
+  data <- prepare_data_hmm(d)
   c(brms::make_standata(d$formula, data = data$brmsdata), data$standata)
 }

@@ -12,7 +12,7 @@ posterior_epred_rect <- function(fit, nsamples = NULL, newdata = NULL, method = 
     pred_rawdata <- newdata
   }
 
-  data_hmm <- make_data_hmm(pred_rawdata)
+  data_hmm <- prepare_data_hmm(pred_rawdata)
 
   epred_mu <- brms::posterior_epred(fit$brmsfit, newdata = data_hmm$brmsdata, nsamples = nsamples)
   if(any(is.na(epred_mu))) {

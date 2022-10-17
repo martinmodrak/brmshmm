@@ -78,7 +78,7 @@ pp_check_state_at <- function(fit, predicted_rect, day, newdata = NULL) {
     pred_rawdata <- newdata
   }
 
-  data_hmm <- make_data_hmm(pred_rawdata)
+  data_hmm <- prepare_data_hmm(pred_rawdata)
 
   last_state_times <- data_hmm$standata$obs_states_rect %>% apply(MARGIN = 1, last_state_time)
 

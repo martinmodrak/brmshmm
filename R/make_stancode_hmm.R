@@ -6,16 +6,24 @@ make_brms_formula_hmm <- function(formula) {
   brms::brmsformula(update.formula(formula, .dummy ~ .))
 }
 
+make_stanvars_hmm <- function(brmshmmdata) {
+    d <- validate_brmshmmdata(brmshmmdata)
+    prep <- prepare_data_hmm(d)
+
+    all_stanvars <-
+      stanvars_base_hmm_api(d, prep$standata) +
+      stanvars_initial_states(d$init_model, prep$standata) +
+      stanvars_transitions(d$trans_model, prep$standata) +
+      stanvars_observations(d$obs_model, prep$standata) +
+      stanvars_base_hmm_code(d, prep$standata)
+
+    all_stanvars
+}
+
 make_stancode_hmm <- function(brmshmmdata) {
   d <- validate_brmshmmdata(brmshmmdata)
 
-  data <- make_data_hmm(d)
-  all_stanvars <-
-    stanvars_base_hmm_api(d, data$standata) +
-    stanvars_initial_states(d$init_model, data$standata) +
-    stanvars_transitions(d$trans_model, data$standata) +
-    stanvars_observations(d$obs_model, data$standata) +
-    stanvars_base_hmm_code(d, data$standata)
+  all_stanvars <- make_stanvars_hmm(d)
 
   brms::make_stancode(d$formula, family = family_transitions(d$trans_model),
                       data = data$brmsdata,

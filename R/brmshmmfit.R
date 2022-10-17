@@ -1,16 +1,15 @@
-brmhmm <- function(brmshmmdata, cache_file = NULL, ...) {
+brmhmm <- function(brmshmmdata, ...) {
   d <- validate_brmshmmdata(brmshmmdata)
 
-  prepdata <- make_data_hmm(d)
+  prepdata <- prepare_data_hmm(d)
 
-  bfit <- brm_with_cache(
-    cache_file = cache_file,
-    formula = brms::brmsformula(d$formula, family = rate_hmm_family),
+  bfit <- brms::brm(
+    formula = brms::brmsformula(d$formula, family = family_transitions(d$trans_model)),
     data = prepdata$brmsdata,
     prior = d$prior,
-    stanvars = rate_hmm_stanvars(prepdata$standata),
+    stanvars =  make_stanvars_hmm(d),
     ...
-    )
+  )
 
   structure(list(
     brmsfit = bfit,
@@ -27,6 +26,7 @@ validate_brmshmmfit <- function(fit) {
   fit
 }
 
+#' @export
 summary.brmshmmfit <- function(fit) {
   validate_brmshmmfit(fit)
   structure(list(
@@ -37,6 +37,7 @@ summary.brmshmmfit <- function(fit) {
   )
 }
 
+#' @export
 print.summary.brmshmmfit <- function(s) {
   print(s$brmssummary)
   #print(s$hmmsummary$summary)
