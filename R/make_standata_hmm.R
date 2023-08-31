@@ -47,7 +47,7 @@ prepare_data_hmm <- function(brmshmmdata) {
   # brmsdata <- brmsdata_all %>% left_join(
   brmsdata <- brmsdata_all %>%
     arrange(.predictor_set, .transition_id) %>%
-    mutate(.brms_id = 1:n(), .dummy = seq(0, 1, length.out = n()))
+    mutate(.brms_id = 1:n(), .transitions = seq(0, 1, length.out = n()))
 
   predictors <- array(NA_integer_, c(N_predictor_sets, N_predictors))
   for(i in 1:nrow(brmsdata)) {

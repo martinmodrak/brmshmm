@@ -3,7 +3,7 @@ make_brms_formula_hmm <- function(formula) {
     stop("Formula needs to be one-sided")
   }
 
-  brms::brmsformula(update.formula(formula, .dummy ~ .))
+  brms::brmsformula(update.formula(formula, .transitions ~ .))
 }
 
 make_stanvars_hmm <- function(brmshmmdata) {

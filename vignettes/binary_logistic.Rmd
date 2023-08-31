@@ -70,6 +70,7 @@ hmm <- brmshmmdata(~ 0 + .transition_id, series_data,
 ```{r}
 ```
 
+Next step: use `subset` to model multiple types of predicted stuff per timepoint
 
 ```{r}
 #file.remove(list.files(here::here("temp_data"), pattern = ".stan", full.names = TRUE))
